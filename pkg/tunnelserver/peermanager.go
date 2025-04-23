@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/netip"
 	"os"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 	"github.com/rancher/rancher/pkg/peermanager"
 	"github.com/rancher/rancher/pkg/serviceaccounttoken"
 	"github.com/rancher/rancher/pkg/settings"
+	"github.com/rancher/rancher/pkg/utils"
 	"github.com/rancher/remotedialer"
 	"github.com/rancher/wrangler/v3/pkg/data"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
@@ -169,13 +169,7 @@ func (p *peerManager) addRemovePeers(endpoints *v1.Endpoints) {
 	toCreate, toDelete, _ := set.Diff(newSet, p.peers)
 	for _, ip := range toCreate {
 		displayIP := ip
-		ipAddr, err := netip.ParseAddr(ip)
-		if err != nil {
-			logrus.Errorf("Unable to parse IP address %s for peer %s: %v", ip, p.server.PeerID, err)
-			continue
-		}
-		if ipAddr.Is6() {
-			logrus.Debugf("Detected ipv6 address %s for peer %s, enclosing in brackets to conform with URL formatting", ip, p.server.PeerID)
+		if utils.IsPlainIPV6(ip) {
 			displayIP = fmt.Sprintf("[%s]", ip)
 		}
 		p.server.AddPeer(fmt.Sprintf(p.urlFormat, displayIP), ip, p.token)
